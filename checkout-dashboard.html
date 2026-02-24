@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Moment Motor Co. — Vehicle Checkout Progress</title>
+    <meta http-equiv="refresh" content="300">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: #f5f6f8;
+            color: #1a1a2e;
+            overflow: hidden;
+            height: 100vh;
+            width: 100vw;
+        }
+
+        .dashboard {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            padding: 28px 40px;
+            gap: 22px;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-shrink: 0;
+        }
+        .header h1 {
+            font-size: 38px;
+            font-weight: 700;
+            color: #1a1a2e;
+            letter-spacing: -0.5px;
+        }
+        .header .subtitle {
+            font-size: 18px;
+            color: #8a8aa0;
+            font-weight: 400;
+            margin-top: 2px;
+        }
+        .header .updated {
+            font-size: 16px;
+            color: #8a8aa0;
+            text-align: right;
+        }
+        .header .updated strong {
+            font-size: 17px;
+        }
+
+        .summary-strip {
+            display: flex;
+            gap: 20px;
+            flex-shrink: 0;
+        }
+        .summary-stat {
+            background: white;
+            border-radius: 12px;
+            padding: 16px 24px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+            display: flex;
+            flex-direction: column;
+            min-width: 160px;
+            flex: 1;
+        }
+        .summary-stat .stat-value {
+            font-size: 40px;
+            font-weight: 800;
+            color: #1a1a2e;
+            line-height: 1.1;
+        }
+        .summary-stat .stat-value .pct-unit {
+            font-size: 22px;
+            font-weight: 600;
+        }
+        .summary-stat .stat-label {
+            font-size: 15px;
+            color: #8a8aa0;
+            font-weight: 500;
+            margin-top: 4px;
+        }
+
+        .vehicle-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+            gap: 18px;
+            flex: 1;
+            overflow-y: auto;
+            padding-bottom: 8px;
+        }
+
+        .vehicle-card {
+            background: white;
+            border-radius: 14px;
+            padding: 22px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+        .card-header .vehicle-name {
+            font-size: 24px;
+            font-weight: 700;
+            color: #1a1a2e;
+        }
+        .card-header .vehicle-detail {
+            font-size: 15px;
+            color: #8a8aa0;
+            margin-top: 2px;
+        }
+        .card-header .pct-big {
+            font-size: 44px;
+            font-weight: 800;
+            line-height: 1;
+        }
+        .card-header .pct-big .pct-symbol {
+            font-size: 22px;
+            font-weight: 600;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 13px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+        .status-testing { background: #e8f4fd; color: #2b7bb9; }
+        .status-acceptance { background: #e6f9ee; color: #1a8a4a; }
+        .status-fabrication { background: #fff3e0; color: #c77700; }
+        .status-other { background: #f0f0f5; color: #6b6b80; }
+
+        .progress-bar-container {
+            width: 100%;
+            height: 12px;
+            background: #f0f0f5;
+            border-radius: 6px;
+            overflow: hidden;
+        }
+        .progress-bar-fill {
+            height: 100%;
+            border-radius: 6px;
+            transition: width 0.6s ease;
+        }
+
+        .sub-metrics {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 6px 16px;
+        }
+        .sub-metric {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 15px;
+        }
+        .sub-metric .label {
+            color: #8a8aa0;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .sub-metric .value {
+            font-weight: 700;
+            color: #1a1a2e;
+            white-space: nowrap;
+            font-size: 15px;
+        }
+
+        .pct-high { color: #1a8a4a; }
+        .pct-mid { color: #c77700; }
+        .pct-low { color: #d94040; }
+        .pct-zero { color: #bbb; }
+
+        .fill-high { background: linear-gradient(90deg, #34c759, #1a8a4a); }
+        .fill-mid { background: linear-gradient(90deg, #ffc107, #e6a200); }
+        .fill-low { background: linear-gradient(90deg, #ff6b6b, #d94040); }
+        .fill-zero { background: #ddd; }
+
+        .loading-msg {
+            text-align: center;
+            padding: 60px;
+            font-size: 20px;
+            color: #8a8aa0;
+        }
+
+        .vehicle-grid::-webkit-scrollbar { width: 6px; }
+        .vehicle-grid::-webkit-scrollbar-track { background: transparent; }
+        .vehicle-grid::-webkit-scrollbar-thumb { background: #d0d0d8; border-radius: 3px; }
+
+        @media (min-width: 1800px) {
+            .vehicle-grid { grid-template-columns: repeat(5, 1fr); }
+        }
+    </style>
+</head>
+<body>
+<div class="dashboard">
+    <div class="header">
+        <div>
+            <h1>Vehicle Checkout Progress</h1>
+            <div class="subtitle">Ampere Startup & Pre-Checkout Tracking</div>
+        </div>
+        <div class="updated" id="updatedTime"></div>
+    </div>
+
+    <div class="summary-strip" id="summaryStrip"></div>
+
+    <div class="vehicle-grid" id="vehicleGrid">
+        <div class="loading-msg">Loading data from Google Sheets...</div>
+    </div>
+</div>
+
+<script>
+const DATA_URL = 'https://script.google.com/macros/s/AKfycbxWP4OHSzXUJUTjZAGSCSYe_dpzrE_TORgdLQgwRXvqDWfc3H2mEbJD8C9EOhHIQTnpLA/exec';
+const REFRESH_MS = 300000;
+
+const FALLBACK_VEHICLES = [
+    { owner: "Shah", year: 1965, color: "Silver", make: "Ford", model: "Mustang", status: "Testing & Tuning", checkout: 88.7, bms: 98.1, inverter: 100.0, pmu: 100.0, raptor: 100.0, functional: 57.7 },
+    { owner: "Vargas", year: 1966, color: "Red", make: "Ford", model: "Mustang", status: "Testing & Tuning", checkout: 100.0, bms: 100.0, inverter: 100.0, pmu: 100.0, raptor: 100.0, functional: 100.0 },
+    { owner: "Connolly", year: 1958, color: "Black", make: "Mercedes", model: "220S", status: "Testing & Tuning", checkout: 74.4, bms: 98.1, inverter: 100.0, pmu: 40.6, raptor: 98.1, functional: 15.4 },
+    { owner: "Barton", year: 1959, color: "White", make: "Chevrolet", model: "Impala", status: "Testing & Tuning", checkout: 94.9, bms: 100.0, inverter: 100.0, pmu: 100.0, raptor: 100.0, functional: 69.2 },
+    { owner: "Buck", year: 1971, color: "Red", make: "Mercedes", model: "280SL", status: "Testing & Tuning", checkout: 80.6, bms: 97.1, inverter: 100.0, pmu: 100.0, raptor: 100.0, functional: 3.8 },
+    { owner: "Feldman", year: 1969, color: "Silver", make: "Mercedes", model: "280SE", status: "Acceptance", checkout: 94.4, bms: 95.2, inverter: 100.0, pmu: 100.0, raptor: 98.1, functional: 84.6 },
+    { owner: "Preheim", year: 1972, color: "Blue", make: "Chevrolet", model: "Blazer", status: "", checkout: 33.4, bms: 92.4, inverter: 82.5, pmu: 0.0, raptor: 1.9, functional: 0.0 },
+    { owner: "Chuter", year: 1962, color: "Red + White", make: "Austin", model: "Healey", status: "Fabrication", checkout: 16.3, bms: 98.1, inverter: 0.0, pmu: 0.0, raptor: 0.0, functional: 0.0 }
+];
+
+let VEHICLES = [];
+let dataSource = 'loading';
+
+async function loadData() {
+    try {
+        const res = await fetch(DATA_URL);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const json = await res.json();
+        if (json.error) throw new Error(json.error);
+        if (json.vehicles && json.vehicles.length > 0) {
+            VEHICLES = json.vehicles.filter(v =>
+                v.owner && !v.owner.includes('#REF') && v.owner !== 'Ampere Default'
+            );
+            dataSource = 'live';
+        } else {
+            throw new Error('No vehicle data returned');
+        }
+    } catch (err) {
+        console.warn('Apps Script error, using fallback data:', err.message);
+        if (VEHICLES.length === 0) {
+            VEHICLES = FALLBACK_VEHICLES;
+            dataSource = 'fallback';
+        }
+    }
+    render();
+}
+
+function getPctClass(pct) {
+    if (pct >= 80) return 'high';
+    if (pct >= 30) return 'mid';
+    if (pct > 0) return 'low';
+    return 'zero';
+}
+
+function getStatusClass(status) {
+    if (!status) return 'other';
+    const s = status.toLowerCase();
+    if (s.includes('testing')) return 'testing';
+    if (s.includes('acceptance')) return 'acceptance';
+    if (s.includes('fabrication')) return 'fabrication';
+    return 'other';
+}
+
+function getVehicleLabel(v) {
+    const parts = [];
+    if (v.year) parts.push(v.year);
+    if (v.make) parts.push(v.make);
+    if (v.model) parts.push(v.model);
+    return parts.join(' ') || 'TBD';
+}
+
+function renderSummary() {
+    const active = VEHICLES.filter(v => v.checkout > 0);
+    const avgProgress = active.length > 0
+        ? (active.reduce((s, v) => s + v.checkout, 0) / active.length).toFixed(1)
+        : 0;
+    const complete = VEHICLES.filter(v => v.checkout >= 95).length;
+    const inProgress = VEHICLES.filter(v => v.checkout > 0 && v.checkout < 95).length;
+    const notStarted = VEHICLES.filter(v => v.checkout === 0).length;
+
+    document.getElementById('summaryStrip').innerHTML = `
+        <div class="summary-stat">
+            <div class="stat-value">${active.length}</div>
+            <div class="stat-label">Active Builds</div>
+        </div>
+        <div class="summary-stat">
+            <div class="stat-value pct-high">${complete}</div>
+            <div class="stat-label">Ready / Near Complete</div>
+        </div>
+        <div class="summary-stat">
+            <div class="stat-value pct-mid">${inProgress}</div>
+            <div class="stat-label">In Progress</div>
+        </div>
+        <div class="summary-stat">
+            <div class="stat-value">${avgProgress}<span class="pct-unit">%</span></div>
+            <div class="stat-label">Avg. Checkout (Active)</div>
+        </div>
+        <div class="summary-stat">
+            <div class="stat-value pct-zero">${notStarted}</div>
+            <div class="stat-label">Not Started</div>
+        </div>
+    `;
+}
+
+function renderGrid() {
+    const vehicles = VEHICLES.filter(v => v.checkout > 0);
+    vehicles.sort((a, b) => b.checkout - a.checkout);
+
+    document.getElementById('vehicleGrid').innerHTML = vehicles.map(v => {
+        const cls = getPctClass(v.checkout);
+        const statusCls = getStatusClass(v.status);
+        const label = getVehicleLabel(v);
+
+        return `
+        <div class="vehicle-card">
+            <div class="card-header">
+                <div>
+                    <div class="vehicle-name">${v.owner}</div>
+                    <div class="vehicle-detail">${label}</div>
+                    ${v.status ? `<div style="margin-top:6px"><span class="status-badge status-${statusCls}">${v.status}</span></div>` : ''}
+                </div>
+                <div class="pct-big pct-${cls}">
+                    ${v.checkout.toFixed(1)}<span class="pct-symbol">%</span>
+                </div>
+            </div>
+            <div class="progress-bar-container">
+                <div class="progress-bar-fill fill-${cls}" style="width: ${v.checkout}%"></div>
+            </div>
+            <div class="sub-metrics">
+                <div class="sub-metric">
+                    <span class="label">BMS</span>
+                    <span class="value pct-${getPctClass(v.bms)}">${v.bms.toFixed(0)}%</span>
+                </div>
+                <div class="sub-metric">
+                    <span class="label">Inverter</span>
+                    <span class="value pct-${getPctClass(v.inverter)}">${v.inverter.toFixed(0)}%</span>
+                </div>
+                <div class="sub-metric">
+                    <span class="label">PMU</span>
+                    <span class="value pct-${getPctClass(v.pmu)}">${v.pmu.toFixed(0)}%</span>
+                </div>
+                <div class="sub-metric">
+                    <span class="label">Raptor</span>
+                    <span class="value pct-${getPctClass(v.raptor)}">${v.raptor.toFixed(0)}%</span>
+                </div>
+                <div class="sub-metric">
+                    <span class="label">Functional</span>
+                    <span class="value pct-${getPctClass(v.functional)}">${v.functional.toFixed(0)}%</span>
+                </div>
+            </div>
+        </div>`;
+    }).join('');
+}
+
+function updateTimestamp() {
+    const now = new Date();
+    const opts = { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' };
+    const sourceLabel = dataSource === 'live' ? 'Live from Sheets' : (dataSource === 'fallback' ? 'Cached data' : '');
+    document.getElementById('updatedTime').innerHTML =
+        `${sourceLabel ? `<span style="font-size:13px">${sourceLabel}</span><br>` : ''}Last updated<br><strong>${now.toLocaleDateString('en-US', opts)}</strong>`;
+}
+
+function render() {
+    renderSummary();
+    renderGrid();
+    updateTimestamp();
+}
+
+loadData();
+setInterval(loadData, REFRESH_MS);
+</script>
+</body>
+</html>
