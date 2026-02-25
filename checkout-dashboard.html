@@ -429,16 +429,16 @@ function renderGrid() {
 function renderPunchlist(v) {
     const pl = v.punchlist;
     if (!pl || pl.total === 0) return '';
-    const items = pl.items.map(item => {
-        const cls = item.done ? 'done' : 'open';
-        const check = item.done ? '&#10003;' : '';
-        return `<div class="punchlist-item ${cls}">
-            <span class="pl-check">${check}</span>
+    if (pl.open === 0) return '';
+    const openItems = pl.items.filter(item => !item.done);
+    const items = openItems.map(item => {
+        return `<div class="punchlist-item open">
+            <span class="pl-check"></span>
             <span class="pl-label">${item.text}</span>
         </div>`;
     }).join('');
     return `<div class="punchlist-section">
-        <div class="punchlist-header">Punchlist &mdash; ${pl.open} open / ${pl.total} total</div>
+        <div class="punchlist-header">Punchlist &mdash; ${pl.open} open${pl.done > 0 ? `, ${pl.done} done` : ''}</div>
         ${items}
     </div>`;
 }
