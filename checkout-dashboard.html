@@ -249,8 +249,10 @@ async function loadData() {
         const json = await res.json();
         if (json.error) throw new Error(json.error);
         if (json.vehicles && json.vehicles.length > 0) {
+            const EXCLUDED_STATUSES = ['', 'shipped', 'fabrication'];
             VEHICLES = json.vehicles.filter(v =>
-                v.owner && !v.owner.includes('#REF') && v.owner !== 'Ampere Default'
+                v.owner && !v.owner.includes('#REF') && v.owner !== 'Ampere Default' &&
+                !EXCLUDED_STATUSES.includes((v.status || '').toLowerCase().trim())
             );
             dataSource = 'live';
         } else {
