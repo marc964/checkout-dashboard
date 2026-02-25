@@ -191,37 +191,53 @@
         .fill-low { background: linear-gradient(90deg, #ff6b6b, #d94040); }
         .fill-zero { background: #ddd; }
 
-        .punchlist-row {
+        .punchlist-section {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        .punchlist-header {
+            font-size: 13px;
+            font-weight: 600;
+            color: #8a8aa0;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+            padding-bottom: 2px;
+        }
+        .punchlist-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 8px;
+            padding: 4px 0;
+            font-size: 13px;
+            line-height: 1.3;
+        }
+        .punchlist-item .pl-check {
+            flex-shrink: 0;
+            width: 16px;
+            height: 16px;
+            border-radius: 4px;
+            border: 2px solid #d0d0d8;
             display: flex;
             align-items: center;
-            gap: 10px;
-            padding: 8px 12px;
-            background: #f8f8fb;
-            border-radius: 8px;
-            font-size: 14px;
+            justify-content: center;
+            font-size: 10px;
+            margin-top: 1px;
         }
-        .punchlist-row .pl-icon {
-            font-size: 16px;
-            flex-shrink: 0;
+        .punchlist-item.done .pl-check {
+            background: #1a8a4a;
+            border-color: #1a8a4a;
+            color: white;
         }
-        .punchlist-row .pl-text {
-            color: #555;
-            flex: 1;
+        .punchlist-item.done .pl-label {
+            color: #aaa;
+            text-decoration: line-through;
         }
-        .punchlist-row .pl-text strong {
+        .punchlist-item.open .pl-check {
+            border-color: #e6a200;
+        }
+        .punchlist-item.open .pl-label {
             color: #1a1a2e;
-        }
-        .punchlist-done {
-            background: #e6f9ee;
-        }
-        .punchlist-done .pl-text {
-            color: #1a8a4a;
-        }
-        .punchlist-open {
-            background: #fff8ec;
-        }
-        .punchlist-open .pl-text strong {
-            color: #c77700;
         }
 
         .loading-msg {
@@ -413,15 +429,17 @@ function renderGrid() {
 function renderPunchlist(v) {
     const pl = v.punchlist;
     if (!pl || pl.total === 0) return '';
-    if (pl.open === 0) {
-        return `<div class="punchlist-row punchlist-done">
-            <span class="pl-icon">&#10003;</span>
-            <span class="pl-text"><strong>Punchlist complete</strong> &mdash; ${pl.total} items done</span>
+    const items = pl.items.map(item => {
+        const cls = item.done ? 'done' : 'open';
+        const check = item.done ? '&#10003;' : '';
+        return `<div class="punchlist-item ${cls}">
+            <span class="pl-check">${check}</span>
+            <span class="pl-label">${item.text}</span>
         </div>`;
-    }
-    return `<div class="punchlist-row punchlist-open">
-        <span class="pl-icon">&#9998;</span>
-        <span class="pl-text"><strong>${pl.open} open</strong> of ${pl.total} punchlist items</span>
+    }).join('');
+    return `<div class="punchlist-section">
+        <div class="punchlist-header">Punchlist &mdash; ${pl.open} open / ${pl.total} total</div>
+        ${items}
     </div>`;
 }
 
