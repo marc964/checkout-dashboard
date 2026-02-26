@@ -195,7 +195,9 @@
             display: flex;
             flex-direction: column;
             gap: 4px;
-            max-height: 120px;
+        }
+        .punchlist-scroll {
+            max-height: 100px;
             overflow: hidden;
             position: relative;
         }
@@ -204,7 +206,7 @@
             flex-direction: column;
             gap: 4px;
         }
-        .punchlist-section.scrolling .punchlist-items {
+        .punchlist-scroll.scrolling .punchlist-items {
             animation: punchscroll var(--scroll-duration, 8s) linear infinite alternate;
         }
         @keyframes punchscroll {
@@ -456,20 +458,20 @@ function renderPunchlist(v) {
     }).join('');
     return `<div class="punchlist-section">
         <div class="punchlist-header">Punchlist &mdash; ${pl.open} open${pl.done > 0 ? `, ${pl.done} done` : ''}</div>
-        <div class="punchlist-items">${items}</div>
+        <div class="punchlist-scroll"><div class="punchlist-items">${items}</div></div>
     </div>`;
 }
 
 function initPunchlistScroll() {
-    document.querySelectorAll('.punchlist-section').forEach(section => {
-        const items = section.querySelector('.punchlist-items');
+    document.querySelectorAll('.punchlist-scroll').forEach(scroll => {
+        const items = scroll.querySelector('.punchlist-items');
         if (!items) return;
-        const overflow = items.scrollHeight - section.clientHeight + 20;
+        const overflow = items.scrollHeight - scroll.clientHeight;
         if (overflow > 0) {
             const duration = Math.max(6, overflow / 15);
-            section.style.setProperty('--scroll-distance', `-${overflow}px`);
-            section.style.setProperty('--scroll-duration', `${duration}s`);
-            section.classList.add('scrolling');
+            scroll.style.setProperty('--scroll-distance', `-${overflow}px`);
+            scroll.style.setProperty('--scroll-duration', `${duration}s`);
+            scroll.classList.add('scrolling');
         }
     });
 }
