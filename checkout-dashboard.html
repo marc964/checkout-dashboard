@@ -195,6 +195,23 @@
             display: flex;
             flex-direction: column;
             gap: 4px;
+            max-height: 120px;
+            overflow: hidden;
+            position: relative;
+        }
+        .punchlist-items {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        .punchlist-section.scrolling .punchlist-items {
+            animation: punchscroll var(--scroll-duration, 8s) linear infinite alternate;
+        }
+        @keyframes punchscroll {
+            0%   { transform: translateY(0); }
+            15%  { transform: translateY(0); }
+            85%  { transform: translateY(var(--scroll-distance, 0px)); }
+            100% { transform: translateY(var(--scroll-distance, 0px)); }
         }
         .punchlist-header {
             font-size: 13px;
@@ -347,8 +364,8 @@ function renderSummary() {
     const avgProgress = active.length > 0
         ? (active.reduce((s, v) => s + v.checkout, 0) / active.length).toFixed(1)
         : 0;
-    const complete = VEHICLES.filter(v => v.checkout >= 95).length;
-    const inProgress = VEHICLES.filter(v => v.checkout > 0 && v.checkout < 95).length;
+    const complete = VEHICLES.filter(v => (v.status || '').toLowerCase() === 'acceptance').length;
+    const inProgress = VEHICLES.filter(v => v.checkout > 0 && (v.status || '').toLowerCase() !== 'acceptance').length;
     const notStarted = VEHICLES.filter(v => v.checkout === 0).length;
 
     document.getElementById('summaryStrip').innerHTML = `
@@ -439,8 +456,22 @@ function renderPunchlist(v) {
     }).join('');
     return `<div class="punchlist-section">
         <div class="punchlist-header">Punchlist &mdash; ${pl.open} open${pl.done > 0 ? `, ${pl.done} done` : ''}</div>
-        ${items}
+        <div class="punchlist-items">${items}</div>
     </div>`;
+}
+
+function initPunchlistScroll() {
+    document.querySelectorAll('.punchlist-section').forEach(section => {
+        const items = section.querySelector('.punchlist-items');
+        if (!items) return;
+        const overflow = items.scrollHeight - section.clientHeight + 20;
+        if (overflow > 0) {
+            const duration = Math.max(6, overflow / 15);
+            section.style.setProperty('--scroll-distance', `-${overflow}px`);
+            section.style.setProperty('--scroll-duration', `${duration}s`);
+            section.classList.add('scrolling');
+        }
+    });
 }
 
 function updateTimestamp() {
@@ -455,6 +486,7 @@ function render() {
     renderSummary();
     renderGrid();
     updateTimestamp();
+    requestAnimationFrame(initPunchlistScroll);
 }
 
 loadData();
